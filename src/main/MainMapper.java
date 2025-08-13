@@ -95,11 +95,11 @@ public class MainMapper {
 		
 		if (isOnlyCSV==1)
 		{
-			getPrs(); // apriori body title
-			genBinaryExit(); //binary body title
-			getAuthors();
-			genBinaryExitAuthors();
-			genBinarybyAuthors();
+			getPrs(); // apriori body title    //jabref4_aprioriBodyTitle
+			genBinaryExit(); //binary body title  //jabref4_binaryBodyTitle
+			getAuthors();  //jabrefAuthor_aprioriBodyTitle
+			genBinaryExitAuthors();  //jabrefAuthor_binaryBodyTitle
+			genBinarybyAuthors();    //jabrefbyAuthor_binaryBodyTitle
 		}
 		else 
 		{
@@ -133,16 +133,13 @@ public class MainMapper {
 			
 			// end header
 			boolean found = false;
-			int pr = 0;
+			String pr = ""; // <-----------------------set back to int
 			// find classification for each PR
 			for (int i=0; i<apns.size(); i++) {
 				AprioriNew apnAux = apns.get(i);
 				ArrayList<String> gs = apnAux.getGenerals();
 				pr = apnAux.getPr();
-				if (pr == 6450) {
-					System.out.println("debug");
-				}
-							
+					
 				// order line in order of generals generals
 				
 				ArrayList<String> printLine = new ArrayList();			
@@ -167,7 +164,7 @@ public class MainMapper {
 				line = "";
 				line = line + pr;
 				
-				if(apnAux.getPr()==18)
+				if(apnAux.getPr()=="18")
 				{
 					System.out.println("Debug");
 				}
@@ -178,9 +175,17 @@ public class MainMapper {
 				beginning = line;
 				// fill PT title and body
 				ArrayList<String> result = dao.getTitleBodyAuthor(pr, project);
-				String title = result.get(0);
-				String body = result.get(1);
-				String author = result.get(2);
+				
+				String title = "";
+				String body = "";
+				String author = "";
+				
+				if (result != null) {
+					title = result.get(0);
+					body = result.get(1);
+					author = result.get(2);
+				}
+				
 				if(title.equals("nan")) {
 					title="";
 				}
@@ -244,7 +249,7 @@ public class MainMapper {
 	
 					}
 					else {
-						  if (pr==452) {
+						  if (pr=="452") {
 							  System.out.println("debug");
 						  }
 						  
@@ -322,19 +327,19 @@ public class MainMapper {
 			e.printStackTrace();
 		}// primeira linha do arquivo
 
-		ArrayList<String> api = null;
+		ArrayList<String> full_expert = null;
 
 		while (s != null)
 		{
 			System.out.println("\nLine: " + s);
 			splitLine(s);
-			api = findAPI(pr, java, project);
+			full_expert = findAPI(pr, java, project);
 
-			if (api==null)
+			if (full_expert==null)
 				System.out.println("not found in " + project + ": " + pr + " - " + java);
 			else 
 			{
-				insertApriori(api);
+				insertApriori(full_expert);
 				insertPr();
 			}
 
@@ -387,8 +392,8 @@ public class MainMapper {
 		}
 		else 
 		{
-			int prAux 		= 0;
-			int pr 		 	= 0;
+			String prAux 		= ""; //set back to int
+			String pr 		 	= ""; //set back to int
 			
 			// create new Apriori obj
 			AprioriNew apn  = new AprioriNew();
@@ -412,7 +417,7 @@ public class MainMapper {
 				else 
 				{
 					// if pr num is same as during last iteration 
-					if (pr==prAux) 
+					if (pr.equals(prAux)) //change back to == 
 					{
 						apn.insertGeneral(ap.getGeneral());
 						if (i+1==aps.size()) 
@@ -443,7 +448,7 @@ public class MainMapper {
 				OutputStreamWriter osw = new OutputStreamWriter(os);
 				BufferedWriter bw = new BufferedWriter(osw);
 				
-				FileOutputStream osc = new FileOutputStream("4_"+classes);
+				FileOutputStream osc = new FileOutputStream(outDir+"4_"+classes);
 				OutputStreamWriter oswc = new OutputStreamWriter(osc);
 				BufferedWriter bwc = new BufferedWriter(oswc);
 		    	//bw.write("header \n");
@@ -454,15 +459,23 @@ public class MainMapper {
 				for (int i=0; i<apns.size(); i++) 
 				{
 					AprioriNew apnAux = apns.get(i);
-					ArrayList<String> gs = apnAux.getGenerals();
+					ArrayList<String> gs = apnAux.getGenerals(); //expert domains
 					pr = apnAux.getPr();
 					FileDAO dao = FileDAO.getInstancia(db, user, pswd);
 					ArrayList<String> result = dao.getTitleBodyAuthor(pr, project);
-					String title = result.get(0);
-					String body = result.get(1);
-					String author = result.get(2);
+					
+					String title = "";
+					String body = "";
+					String author = "";
+					
+					if (result != null) {
+						title = result.get(0);
+						body = result.get(1);
+						author = result.get(2);
+					}
+					
 					if (title!=null&&!title.contentEquals("nan")&&!title.equals("NaN")&&!title.isEmpty()){
-						if (body!=null&&!body.contentEquals("nan")&&!body.equals("NaN")&&!body.isEmpty()){
+						if (true || body!=null&&!body.contentEquals("nan")&&!body.equals("NaN")&&!body.isEmpty()){
 							
 							title = filter_text(title, cases);
 							body = filter_text(body, cases);
@@ -471,7 +484,7 @@ public class MainMapper {
 							//line = line + ","+result.get(0)+ ","+result.get(1);// title and body
 							line = line + ","+title+ ","+body;// title and body
 							
-							if(apnAux.getPr()==18)
+							if(apnAux.getPr()=="18")
 							{
 								System.out.println("Debug");
 							}
@@ -1150,17 +1163,28 @@ public class MainMapper {
 	}
 
 
-	private void insertApriori(ArrayList<String> api) 
+	private void insertApriori(ArrayList<String> full_expert) 
 	{
 		FileDAO fd = FileDAO.getInstancia(db,user,pswd);
+		
+		String expert = null;
+		String sub_expert = null;
+		String full_ex = null;
 
-		for(int i = 0; i<api.size(); i++) 
+		for(int i = 0; i<full_expert.size(); i++) 
 		{
-			boolean result = fd.insertApriori(pr, java, api.get(i), project, author);
+			full_ex = full_expert.get(i);
+			expert = full_ex.substring(0, full_ex.indexOf(';'));
+			sub_expert = full_ex.substring(full_ex.indexOf(';') + 1);
+					
+			//System.out.println("full_expert: \"" + full_ex + "\", expert: " + expert + ", sub_expert: " + sub_expert);
+					
+			
+			boolean result = fd.insertApriori(pr, java, expert, sub_expert, project, author);
 			
 			if (!result) 
 			{
-				System.out.println("Insert apriori failed: "+project +" - "+ pr + " - "+ java + " - "+ api.get(i) + " - " + author);
+				System.out.println("Insert apriori failed: "+project +" - "+ pr + " - "+ java + " - " + expert + " - " + sub_expert + " - " + author);
 			}
 		}
 		
@@ -1172,7 +1196,7 @@ public class MainMapper {
 		
 		boolean result = fd.insertPr(pr, title, body, project, author);
 		if (!result) {
-				System.out.println("Insert pr failed: "+ pr + " - "+ title + " - "+ body + " - "+ author);
+			System.out.println("Insert pr failed: "+ pr + " - "+ title + " - "+ body + " - "+ author);
 		}
 		
 		
@@ -1190,10 +1214,11 @@ public class MainMapper {
 		return gs;
 	}
 
-
 	private boolean splitLine(String s) {
 
 		boolean isOk = false;
+		int sepLen = separator.length();
+
 		int comma = s.indexOf(separator);
 		
 		if (comma == -1) 
@@ -1203,7 +1228,7 @@ public class MainMapper {
 		}
 		
 		pr = s.substring(0, comma);
-		int comma1 = s.indexOf(separator, comma+1);
+		int comma1 = s.indexOf(separator, comma+sepLen);
 		
 		if (comma1 == -1) 
 		{
@@ -1211,7 +1236,7 @@ public class MainMapper {
 			return isOk;
 		}
 		
-		java = s.substring(comma+1, comma1);
+		java = s.substring(comma+sepLen, comma1);
 		// get only the file name (because in the OSSParser that is filling the database without the last "/" before file name!!!)
 		int slash = java.lastIndexOf("/");
 		
@@ -1222,7 +1247,7 @@ public class MainMapper {
 		}
 		
 		java = java.substring(slash+1, java.length());
-		int comma2 = s.indexOf(separator, comma1+1);
+		int comma2 = s.indexOf(separator, comma1+sepLen);
 		
 		if (comma2 == -1) 
 		{
@@ -1230,12 +1255,12 @@ public class MainMapper {
 			return isOk;
 		}
 		
-		title = s.substring(comma1+1, comma2);
+		title = s.substring(comma1+sepLen, comma2);
 		
 		// get only the file name (because in the OSSParser that is filling the database without the last "/" before file name!!!)
 		//int slash = s.lastIndexOf("/");
 		//java = s.substring(slash+1, s.length());
-		int comma3 = s.indexOf(separator, comma2+1);
+		int comma3 = s.indexOf(separator, comma2+sepLen);
 		
 		if (comma3 == -1) 
 		{
@@ -1243,8 +1268,8 @@ public class MainMapper {
 			return isOk;
 		}
 		
-		body = s.substring(comma2+1, comma3);
-		author = s.substring(comma3+1, s.length());
+		body = s.substring(comma2+sepLen, comma3);
+		author = s.substring(comma3+sepLen, s.length());
 		
 		pr = pr.trim();
 		author = author.trim();
@@ -1259,7 +1284,7 @@ public class MainMapper {
 		title = filter_text(title, cases);
 		
 		body = filter_text(body, cases);
-		System.out.println("pr: "+pr+" , java: "+java + " title: "+ title + "author: "+ author);
+		System.out.println("pr: "+pr+", java: "+java + ", title: "+ title + ", author: "+ author);
 		
 		isOk = true;
 		
@@ -1366,7 +1391,7 @@ public class MainMapper {
 					ArrayList <Author> result = dao.getTitleBodyByAuthor(author, project);
 					String title = "";
 					String body = "";
-					int pr;
+					String pr; //<--------------------------------set back to int
 					String pras = "";
 					if (result != null) {
 						for (int x = 0; x<result.size(); x++) {
@@ -1454,7 +1479,7 @@ public class MainMapper {
 			
 			// end header
 			boolean found = false;
-			int pr = 0;
+			String pr = ""; //<---------------------------------set back to int
 			// find classification for each PR
 			for (int i=0; i<apna.size(); i++) {
 				AprioriNew apnAux = apna.get(i);
@@ -1546,7 +1571,7 @@ public class MainMapper {
 				ArrayList<PrIssue> linkedIssuesAux = new ArrayList();
 				
 				for (int j=0; j<prs.size(); j++) {
-					int pri = (int) prs.get(j);
+					String pri = (String) prs.get(j);  //set back to int
 					linkedIssuesAux = (dao.getIssues(pri, project));
 					for (int v=0; v<linkedIssuesAux.size(); v++) {
 						PrIssue aux = linkedIssuesAux.get(v);
@@ -1628,6 +1653,7 @@ public class MainMapper {
 
 								 }
 						 }
+						
 						 line = line + ";"+pras +";"+title+ ";"+body ;// title and body
 						 line = line + ";" +prRes+";"+ issue+";"+  issueTitle+";"+  issueBody+";"+  issueComments+";"+   issueTitleLink+";"+  issueBodyLink+";"+  issueCommentsLink+";"+   isPR+";"+    isTrain+";"+    commitMessage +";"+ prComments ;
 						 line = line + "\n";
@@ -1662,6 +1688,7 @@ public class MainMapper {
 			BufferedWriter bw = new BufferedWriter(osw);
 	    	//bw.write("header \n");
 			String line = "";
+			int line_count = 1;
 			String beginning = "";
 			FileDAO dao = FileDAO.getInstancia(db, user, pswd);
 			// write header
@@ -1675,9 +1702,11 @@ public class MainMapper {
 			line = removeUtf8Mb4(line);				
 			bw.write(line);
 			
+			line_count += 1;
+			
 			// end header
 			boolean found = false;
-			int pr = 0;
+			String pr = ""; // <----------------------set back to int
 			// find classification for each PR
 			for (int i=0; i<apna.size(); i++) {
 				AprioriNew apnAux = apna.get(i);
@@ -1720,6 +1749,8 @@ public class MainMapper {
 				
 				line = "";
 				line = line + author;
+			
+				System.out.print("line " + line_count + ": " + line);
 				
 				// add zeros and ones to line to print
 				for (int j=0; j<printLine.size(); j++) {
@@ -1776,7 +1807,7 @@ public class MainMapper {
 				ArrayList<PrIssue> linkedIssuesAux = new ArrayList();
 				
 				for (int j=0; j<prs.size(); j++) {
-					int pri = (int) prs.get(j);
+					String pri = (String) prs.get(j); //set back to int
 					linkedIssuesAux = (dao.getIssues(pri, project));
 					for (int v=0; v<linkedIssuesAux.size(); v++) {
 						PrIssue aux = linkedIssuesAux.get(v);
@@ -1805,7 +1836,14 @@ public class MainMapper {
 					 line = line + ";" +prRes+";"+ issue+";"+  issueTitle+";"+  
 					 issueBody+";"+  issueComments+";"+   issueTitleLink+";"+  issueBodyLink+";"+  issueCommentsLink+";"+   isPR+";"+    isTrain+";"+    commitMessage +";"+ prComments ;
 					line = line + "\n";
-					line = removeUtf8Mb4(line);			
+					line = removeUtf8Mb4(line);		
+					
+					if (line_count == 4)
+					{
+						System.out.println("debug");
+						System.out.println(line);
+					}
+					
 					bw.write(line);
 					line = "";
 
@@ -1828,9 +1866,15 @@ public class MainMapper {
 							 line = line + ";" +prRes+";"+ issue+";"+  issueTitle+";"+  
 							 issueBody+";"+  issueComments+";"+   issueTitleLink+";"+  issueBodyLink+";"+  issueCommentsLink+";"+   isPR+";"+    isTrain+";"+    commitMessage +";"+ prComments ;
 							line = line + "\n";
+							
+							if (line_count == 4)
+							{
+								System.out.println("debug");
+								System.out.println(line);
+							}
+							
 							bw.write(line);
 							line = "";
-	
 					}
 					else {
 						  
@@ -1858,9 +1902,45 @@ public class MainMapper {
 
 								 }
 						 }
+						 
+						 if(prRes.trim().isEmpty()) {
+							 prRes = " ";
+						 }
+						 if(issueTitle.trim().isEmpty()) {
+							issueTitle = "";
+						 }
+						 if(issueBody.trim().isEmpty()) {
+							issueBody = "";
+						 }
+						 if(issueComments.trim().isEmpty()) {
+							issueComments = "";
+						 }
+						 if(issueTitleLink.trim().isEmpty()) {
+							issueTitleLink = "";
+						 }
+						 if(issueBodyLink.trim().isEmpty()) {
+							issueBodyLink = "";
+						 }
+						 if(issueCommentsLink.trim().isEmpty()) {
+							issueCommentsLink = "";
+						 }
+						 if(commitMessage.trim().isEmpty()) {
+							commitMessage = "";
+						 }
+						 if(prComments.trim().isEmpty()) {
+							prComments = "";
+						 }
+						 
 						 line = line + ";" + pras + ";"+title+ ";"+body ;// title and body
 						 line = line + ";" +prRes+";"+ issue+";"+  issueTitle+";"+  issueBody+";"+  issueComments+";"+   issueTitleLink+";"+  issueBodyLink+";"+  issueCommentsLink+";"+   isPR+";"+    isTrain+";"+    commitMessage +";"+ prComments ;
 						 line = line + "\n";
+						 
+						 if (line_count == 4)
+							{
+								System.out.println("debug");
+								System.out.println(line);
+							}
+						 
 						 bw.write(line);
 						 line = "";
 						 
@@ -1872,6 +1952,7 @@ public class MainMapper {
 				//line = line + "\n";
 				//bw.write(line);
 				//line = "";
+				line_count += 1;
 	    	}
 	    	bw.close();
 		} catch (FileNotFoundException e) {

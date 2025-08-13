@@ -3,7 +3,7 @@ package model;
 public class Apriori {
 	
 	private String general;
-	private int pr;
+	private String pr;  //set back to int
 	private String title;
 	private String body;
 	private String author;
@@ -26,10 +26,10 @@ public class Apriori {
 	public void setGeneral(String general) {
 		this.general = general;
 	}
-	public int getPr() {
+	public String getPr() { //set back to int
 		return pr;
 	}
-	public void setPr(int pr) {
+	public void setPr(String pr) { //set back to int
 		this.pr = pr;
 	}
 	public void setAuthor(String author) {
