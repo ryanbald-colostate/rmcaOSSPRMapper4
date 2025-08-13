@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class AprioriNew {
 	
-	private int pr;
+	private String pr; //set back to int
 	private String title;
 	private String body;
 	private String author;
@@ -26,10 +26,10 @@ public class AprioriNew {
 		super();
 		generals = new ArrayList<String>();
 	}
-	public int getPr() {
+	public String getPr() { //set back to int
 		return pr;
 	}
-	public void setPr(int pr) {
+	public void setPr(String pr) { //set back to int
 		this.pr = pr;
 	}
 	public ArrayList<String> getGenerals() {

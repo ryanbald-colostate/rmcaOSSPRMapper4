@@ -5,7 +5,7 @@ public class Author {
 	private String author;
 	private String title;
 	private String body;
-	private int pr;
+	private String pr; //set back to int
 	public String getAuthor() {
 		return author;
 	}
@@ -24,10 +24,10 @@ public class Author {
 	public void setBody(String body) {
 		this.body = body;
 	}
-	public int getPr() {
+	public String getPr() { //set back to int
 		return pr;
 	}
-	public void setPr(int pr) {
+	public void setPr(String pr) { //set back to int
 		this.pr = pr;
 	}
 }

@@ -41,23 +41,32 @@ public class FileDAO {
 		{
 			Statement comandoSql = con.createStatement();
 			
-			String sql = "select expert from file a, \"file_API\" b, \"API_specific\" c where a.full_name = b.file_name and c.api_name_fk = b.api_name and a.project = '"+ projectName +"' and a.file_name like '%"+ java + "%' and expert is not null GROUP BY c.expert";			
+			String sql = "select expert, sub_expert from file a, \"file_API\" b, \"API_specific\" c where a.full_name = b.file_name and c.api_name_fk = b.api_name and a.project = '"+ projectName +"' and a.file_name like '%"+ java + "%' and expert is not null GROUP BY c.expert, c.sub_expert";			
 			
-			//System.out.println(sql);
+			System.out.println(sql);
 			
 			ResultSet rs = comandoSql.executeQuery(sql);
 			
 			String expert = null;
+			String sub_expert = null;
+			String full_expert = null;
 			
 			while(rs.next())
 			{
 				expert = rs.getString("expert");
 				//System.out.println("expert string: " + expert);
+				
+				sub_expert = rs.getString("sub_expert");
+				//System.out.println("sub_expert string: " + sub_expert);
+				
+				full_expert = expert + ";" + sub_expert;
+				//System.out.println("full_expert string: " + full_expert);
+
 
 				if( expert != "Trash" )
 				{
-					es.add(expert);
-					///System.out.println("expert array: " + es);
+					es.add(full_expert);
+					//System.out.println("expert array: " + es);
 					//System.out.println("\n");
 					found = true;
 				}
@@ -76,7 +85,7 @@ public class FileDAO {
 		
 	}
 
-	public boolean insertApriori(String pr, String java, String expert, String project, String author) {
+	public boolean insertApriori(String pr, String java, String expert, String sub_expert, String project, String author) {
 		// TODO Auto-generated method stub
 		Connection con = DBUtil.getConnection(dbcon, user, pswd);
 		
@@ -84,11 +93,15 @@ public class FileDAO {
 		{
 			Statement comandoSql = con.createStatement();
 			
-			String sql = "insert into apriori (pr,java,expert,project, author) values ("+pr+",'"+java+"'"+",'"+expert+"', '"+project+"', '"+author+"')";
+			String sql = "insert into apriori (pr,java,expert,sub_expert,project, author) values (" + "'" +pr+ "'" +",'"+java+"'"+",'"+expert+"', '"+sub_expert+"', '"+project+"', '"+author+"')";
 
-			//System.out.println(sql);
+			System.out.println(sql);
 			
 			comandoSql.executeUpdate(sql);
+			
+			if (pr.equals("I006526646bde76663d20e9944cb85c0c0307b4fc")) {
+				System.out.println("Debug");
+			}
 			
 			
 		} catch (SQLException e) {
@@ -107,7 +120,7 @@ public class FileDAO {
 		try {
 			Statement comandoSql = con.createStatement();
 			
-			String sql = "insert into pr values ("+pr+",'"+title+"'"+",'"+body+"', '"+project+"', '" + author+ "')";
+			String sql = "insert into pr values (" + "'" +pr+ "'" + ",'"+title+"'"+",'"+body+"', '"+project+"', '" + author+ "')";
 
 			System.out.println(sql);
 			
@@ -116,7 +129,10 @@ public class FileDAO {
 			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			//System.out.println(e.getMessage());
+			System.out.println(e.getMessage());
+			if(!e.getMessage().contains("ERROR: duplicate key")) {
+				System.out.println("debug");
+			}
 			return false;
 		}
 		return true;
@@ -129,29 +145,34 @@ public class FileDAO {
 		ArrayList<Apriori> prs = new ArrayList<Apriori>();
 		boolean found = false;
 		try {
+			
 			Statement comandoSql = con.createStatement();
 			
-//<<<<<<< HEAD
-			String sql = "select pr, a.expert from apriori a where project = \'" + project + "\' GROUP BY pr, a.expert ORDER BY pr";
-//======= select pr, a.expert from apriori a where project = 'jabref' GROUP BY pr, a.expert ORDER BY pr
+//<<<<<<< HEAD		
+			String sqlSkill =  "select pr, a.expert, a.sub_expert from apriori a where project = \'" + project + "\' GROUP BY pr, a.expert, a.sub_expert ORDER BY pr, a.expert, a.sub_expert";
+//======= select pr, a.expert, a.sub_expert from apriori a where project = 'jabref' GROUP BY pr, a.expert, a.sub_expert ORDER BY pr, a.expert, a.sub_expert
 
 			//String sql = "select general from file a, \"file_API\" b, \"API_specific\" c where a.file_name = b.file_name and c.api_name_fk = b.api_name and a.full_name like '%"+ java + "%' GROUP BY c.general"; 
 //			String sql = "select pr, a.expert from apriori a GROUP BY pr, a.expert order by pr";
 //>>>>>>> 18981556b016fe3128de310029f1f97ffb4ded49
-			
-			System.out.println( sql + "\n" );
-			
-			ResultSet rs = comandoSql.executeQuery(sql);
+		
+			System.out.println( sqlSkill + "\n" );
+						
+			ResultSet skillRS = comandoSql.executeQuery(sqlSkill);
 			
 			String expert = null;
-			int pr = 0;
+			String sub_expert = null;
+			String skill = null;
+			String pr = ""; //set back to int
 			
-			
-			while(rs.next()){
-				expert = rs.getString("expert");
-				pr = rs.getInt("pr");
+			while(skillRS.next()){
+				expert = skillRS.getString("expert");
+				sub_expert = skillRS.getString("sub_expert");
+				pr = skillRS.getString("pr"); //set back to int
+				
 				Apriori ap = new Apriori();
-				ap.setGeneral(expert); // using the old general field to hold experts
+				skill = expert + ":" + sub_expert;
+				ap.setGeneral(skill); // using the old general field to hold experts
 				ap.setPr(pr);
 				prs.add(ap);
 				found = true;
@@ -161,8 +182,9 @@ public class FileDAO {
 			// TODO Auto-generated catch block
 			//System.out.println(e.getMessage());
 		}
-		if (found)
+		if (found) {
 			return prs;
+		}
 		else
 			return null;
 	
@@ -174,45 +196,52 @@ public class FileDAO {
 		ArrayList<Apriori> authors = new ArrayList<Apriori>();
 		boolean found = false;
 		try {
-			Statement comandoSql = con.createStatement();
 			
-//<<<<<<< HEAD
-			String sql = "select author, a.expert from apriori a where project = \'" + project + "\' GROUP BY author, a.expert ORDER BY author";
-//======= select pr, a.expert from apriori a where project = 'jabref' GROUP BY pr, a.expert ORDER BY pr
+			Statement comandoSql = con.createStatement();	
+			
+//<<<<<<< HEAD	
+			String sqlSkill = "select author, a.expert, a.sub_expert from apriori a where project = \'" + project + "\' GROUP BY author, a.expert, a.sub_expert ORDER BY author, a.expert, a.sub_expert";
+//======= select pr, a.expert, a.sub_expert from apriori a where project = 'jabref' GROUP BY pr, a.expert, a.sub_expert ORDER BY pr, a.expert, a.sub_expert
 
 			//String sql = "select general from file a, \"file_API\" b, \"API_specific\" c where a.file_name = b.file_name and c.api_name_fk = b.api_name and a.full_name like '%"+ java + "%' GROUP BY c.general"; 
 //			String sql = "select pr, a.expert from apriori a GROUP BY pr, a.expert order by pr";
 //>>>>>>> 18981556b016fe3128de310029f1f97ffb4ded49
+					
+			System.out.println( sqlSkill + "\n" );
 			
-			System.out.println( sql + "\n" );
-			
-			ResultSet rs = comandoSql.executeQuery(sql);
+			ResultSet skillRS = comandoSql.executeQuery(sqlSkill);
 			
 			String expert = null;
+			String sub_expert = null;
+			String skill = null;
 			String author = null;
 			
-			
-			while(rs.next()){
-				expert = rs.getString("expert");
-				author = rs.getString("author");
+			while(skillRS.next()){
+				expert = skillRS.getString("expert");
+				sub_expert = skillRS.getString("sub_expert");
+				author = skillRS.getString("author");
+				
 				Apriori ap = new Apriori();
-				ap.setGeneral(expert); // using the old general field to hold experts
+				skill = expert + ":" + sub_expert;
+				ap.setGeneral(skill); // using the old general field to hold experts
 				ap.setAuthor(author);
 				authors.add(ap);
 				found = true;
 			}
 			
+			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			//System.out.println(e.getMessage());
 		}
-		if (found)
+		if (found) {
 			return authors;
+		}
 		else
 			return null;
-	
+		
 	}
-	public ArrayList<String> getTitleBodyAuthor(int pr, String project){
+	public ArrayList<String> getTitleBodyAuthor(String pr, String project){ //set back to int
 		Connection con = DBUtil.getConnection(dbcon, user, pswd);
 		String title = null;
 		String body = null;
@@ -223,7 +252,7 @@ public class FileDAO {
 			Statement comandoSql = con.createStatement();
 			
 			//String sql = "select general from file a, \"file_API\" b, \"API_specific\" c where a.file_name = b.file_name and c.api_name_fk = b.api_name and a.full_name like '%"+ java + "%' GROUP BY c.general"; 
-			String sql = "select title, body, author from pr where pr = "+ pr + " and project = '" + project + "'";
+			String sql = "select title, body, author from pr where pr = "+ "'" +pr+ "'" + " and project = '" + project + "'"; //remove '' around pr
 			
 			System.out.println(sql);
 			
@@ -255,7 +284,7 @@ public class FileDAO {
 		String title = "";
 		String body = "";
 		//ArrayList<Integer> pr = new ArrayList();
-		int pr;
+		String pr; //change back to int
 		ArrayList <Author>result = new ArrayList<Author>();
 		boolean found = false;
 		try {
@@ -275,7 +304,7 @@ public class FileDAO {
 				body = rs.getString("body");
 				author = rs.getString("author");
 				//pr.add(rs.getInt("pr"));
-				pr = rs.getInt("pr");
+				pr = rs.getString("pr"); //set back to getInt()
 				aut.setTitle(title);
 				aut.setBody(body);
 				aut.setAuthor(author);
@@ -355,18 +384,25 @@ public class FileDAO {
 		ArrayList<String> result = new ArrayList();
 		boolean found = false;
 		try {
+		
 			Statement comandoSql = con.createStatement();
 			
-			String sql = "select distinct expert from apriori ";
+			String sqlSkill = "select distinct expert, sub_expert from apriori order by expert, sub_expert";
+			System.out.println(sqlSkill);
 			
-			System.out.println(sql);
+			ResultSet skillRS = comandoSql.executeQuery(sqlSkill);
+			ResultSetMetaData skillRSMD = skillRS.getMetaData();
 			
-			ResultSet rs = comandoSql.executeQuery(sql);
-			ResultSetMetaData rsmd = rs.getMetaData();
 			
-			while(rs.next()){
-				col = rsmd.getColumnName(1);
-				general = rs.getString(1);
+			String expert = null;
+			String sub_expert = null;
+			
+			while(skillRS.next()) {
+				col = skillRSMD.getColumnName(1);
+				expert = skillRS.getString("expert");
+				sub_expert = skillRS.getString("sub_expert");
+				
+				general = expert + ":" + sub_expert;
 				result.add(general);
 				
 				found = true;
@@ -383,7 +419,7 @@ public class FileDAO {
 		
 	}
 
-	public ArrayList<PrIssue> getIssues(int pr, String project) {
+	public ArrayList<PrIssue> getIssues(String pr, String project) { //change back to int
 		// TODO Auto-generated method stub
 		Connection con = DBUtil.getConnection(dbcon, user, pswd);
 		 String prRes = "";
