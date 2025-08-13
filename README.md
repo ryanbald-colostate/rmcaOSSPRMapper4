@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # OSSPRMapper4
 OSSPRMApper4 address the load of author skills and the creation of csv to process author predictions
 ### How to Run
@@ -61,3 +62,7 @@ PRClasses.txt
 
     - 1: the program will generate the binary output file and the apriori file in the folder (arg eight, "bin") using the info in the database.
 
+=======
+# rmcaOSSPRMapper4
+This is a version of OSSPRMapper4 made to handle the rmca project data. The main difference is it is changed to handle pr numbers as strings instead of ints.
+>>>>>>> dc01b47a8bddeecb4ba536fa4ec750201a8e59a8
